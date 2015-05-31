@@ -1,15 +1,5 @@
 #!/usr/local/bin/ruby
 
-require 'socket'
-require 'twitter'
-require 'logger'
-require 'yaml'
-require 'mysql2'
-
-$DEBUG = true
-
-CONFIG_FILE   = File.join(File.dirname(__FILE__), '..', 'conf.yaml')
-
 $log = Logger.new(STDOUT)
 $log.level = Logger::DEBUG
 
@@ -60,7 +50,7 @@ end
 
 ### old code, clean up
 ### todo: more generic error checking
-def get_follower_ids 
+def get_follower_ids
 	begin
 		follower_ids = Thread.current['conn']['twitter'].follower_ids
 	rescue Twitter::Error::TooManyRequests => error
@@ -115,7 +105,7 @@ end
 
 
 
-# create a new job in our database 
+# create a new job in our database
 # todo: add values for rt/replies/userid
 def create_db_job
 	m = connect_to_db
@@ -144,16 +134,16 @@ end
 # print output of file
 def get_list_command
 	# check db entry to verify status = done
-	if is_job_done == false 
-		# job is not in done state 
+	if is_job_done == false
+		# job is not in done state
 		# todo: error message here
 		Thread.exit
 	end
-	
+
 	# print file to client
 	read_from_file
 
-	# delete file 
+	# delete file
 	delete_file
 
 	# remove db entry
@@ -268,19 +258,19 @@ end
 
 
 # thread function for starting to kick off crap to twitter.
-def go_thread 
+def go_thread
 	userids = Array.new
 
 	# create db entry
 	create_db_job
 
-	# todo: verify rt or reply is set to true - must have at least one set 
+	# todo: verify rt or reply is set to true - must have at least one set
 
 	# pull down latest 200 tweets from user
 	tweets = get_timeline
 
 	# unrecoverable error
-	if ! tweets 
+	if ! tweets
 		# todo: set an error state in the db of some sort
 		return
 	end
@@ -294,7 +284,7 @@ def go_thread
 		# pops these ids into the userids array, removes dupes
 		userids = userids|get_retweeters(tweetid)
 	end
-	
+
 	# todo: if reply is set, search API for username, get latest results (what is limit?)
 	# looks like appropriate call is mentions_timeline - can pull down 800 tweets
 
@@ -321,7 +311,7 @@ def go_command
 	# see if a job is already running. cheap and easy way of doing it.
 	# should probably be more graceful about it
 	return if is_job_running
-	return if is_job_done 
+	return if is_job_done
 
 	# copy our connection data out to a new variable
 	conn = Thread.current['conn']
@@ -329,7 +319,7 @@ def go_command
 	# spin up a new thread
 	Thread.new do
 		Thread.current['conn'] = conn
-		go_thread	
+		go_thread
 	end
 end
 
@@ -341,10 +331,10 @@ def parse_command(command)
 	case command
 	when /^user (.*)$/
 		Thread.current['conn']['user'] = $1
-		return true 
+		return true
 	when /^rt (.*)$/
 		Thread.current['conn']['rt'] = $1
-		return true 
+		return true
 	when /^reply (.*)$/
 		Thread.current['conn']['reply'] = $1
 		return true
@@ -362,7 +352,7 @@ def parse_command(command)
 
 	# already returned true for things that require more input
 	# this seems less than intuitive, though.
-	false	
+	false
 end
 
 
@@ -371,7 +361,7 @@ end
 # returns: true if job found, false if not
 # todo: error handling
 def status_command
-	# query database to get status of possible existing job 
+	# query database to get status of possible existing job
 	if is_job_running
 		$log.info("[#{Thread.current['conn']['userdata'].id}] WAIT")
 		Thread.current['client'].puts("WAIT")
@@ -403,7 +393,7 @@ end
 
 
 # authenticate to twitter
-# return: twitter client object 
+# return: twitter client object
 def twitter_auth
 	$log.debug("Authenticating")
 
@@ -420,16 +410,16 @@ def twitter_auth
 	Thread.current['conn']['oauth_secret'] = Thread.current['client'].gets.chop
 	$log.debug("oauth_secret: #{Thread.current['conn']['oauth_secret']}")
 
-	# attempt to connect to auth to twitter 
+	# attempt to connect to auth to twitter
 	# do i need to put an error handler here?
 	Thread.current['conn']['twitter'] = Twitter::REST::Client.new do |config|
 		config.consumer_key = consumer_key
 		config.consumer_secret = consumer_secret
-		config.access_token = Thread.current['conn']['oauth_token'] 
-		config.access_token_secret = Thread.current['conn']['oauth_secret'] 
+		config.access_token = Thread.current['conn']['oauth_token']
+		config.access_token_secret = Thread.current['conn']['oauth_secret']
 	end
 
-	if Thread.current['conn']['twitter'] 
+	if Thread.current['conn']['twitter']
 		Thread.current['client'].puts("AUTH_OK")
 		return true
 	else
@@ -484,7 +474,7 @@ def handle_client
 		# return if command is empty
 		break unless command
 		# return if parse_command is false
-		break unless parse_command(command) 
+		break unless parse_command(command)
 	end
 
 	$log.info("Closing connection")
