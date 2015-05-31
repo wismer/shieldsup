@@ -1,8 +1,8 @@
-base_dir: /path/to/shieldsup
+base_dir: /User/Matt/projects/open-source/shieldsup
 socket_file: backend.sock
-temp_dir: /path/to/temp/dir
+temp_dir: /tmp
 db:
-  host: MYSQL_HOST 
-  username: MYSQL_USER
-  password: MYSQL_PASS
-  database: MYSQL_DB
+  host: localhost
+  username: root
+  password: password
+  database: shieldsup
